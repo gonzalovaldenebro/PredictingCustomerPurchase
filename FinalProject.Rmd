@@ -1,0 +1,864 @@
+---
+title: "FinalProject"
+output: html_document
+date: "2023-11-14"
+---
+
+# STAT 172: Generalized Linear Models and Data Mining Final Project
+
+## Gonzalo Valdenebro
+
+[LinkedIn](https://www.linkedin.com/in/gonzalo-valdenebro-035392157/) | [GitHub](https://github.com/gonzalovaldenebro)
+
+## 1. Project Motivation
+
+For this project, I am interested in predicting whether a customer will buy a ticket next month in a tourism ticketing website.
+
+## 2. Cleaning the environment and loading packages
+
+```{r}
+rm(list = ls())
+```
+
+```{r}
+library(rpart)
+library(rpart.plot)
+library(ggplot2)
+library(pROC)
+library(explore)
+library(RColorBrewer)
+library(tidyverse)
+library(dplyr)
+library(kableExtra)
+```
+
+## 3. Loading the data
+
+```{r}
+cv = read.csv('Data/CustomerBehaviourTourism.csv', stringsAsFactors = TRUE) 
+```
+
+This is my data. It is cool. There are `r nrow(cv)` rows in my data.
+
+## 4. Exploratory Data Analysis
+
+### 4.1. Exploring the data structure
+
+```{r}
+#str(cv)
+```
+
+### 4.2. Exploring the summary statistics
+
+```{r}
+#summary(cv)
+```
+
+### 4.3. Missing Values
+
+-   **Yearly_avg_view_on_travel_page** *[int]*: `r sum(is.na(cv$Yearly_avg_view_on_travel_page))`
+-   **total_likes_on_outstation_checkin_given** *[int]*: `r sum(is.na(cv$total_likes_on_outstation_checkin_given))`
+-   **Yearly_avg_comment_on_travel_page** *[int]*: `r sum(is.na(cv$Yearly_avg_comment_on_travel_page))`
+-   **Adult_flag** *[int]*: `r sum(is.na(cv$Adult_flag))`
+-   **Daily_Avg_mins_spend_on_traveling_page** *[int]*: `r sum(is.na(cv$Daily_Avg_mins_spend_on_traveling_page))`
+
+## 5. Data Cleaning
+
+### 5.2.1. Clean the **following_company_page** column
+
+The **following_company_page** column should be either *"Yes"* or *"No"* values, but I come to find that it contains *`r unique(cv$following_company_page)`*. Which are distributed by the following order:
+
+-   **0 :** `r sum(cv$following_company_page == 0)`
+-   **1 :** `r sum(cv$following_company_page == 1)`
+-   **Yes :** `r sum(cv$following_company_page == 'Yes')`
+-   **No :** `r sum(cv$following_company_page == 'No')`
+-   **Empty:** `r sum(cv$following_company_page == "")`
+-   **Yeso :** `r sum(cv$following_company_page == 'Yeso')`
+
+**Action Plan:** Collapse the **following_company_page** values to *"Yes"* and *"No"*, by making the *"1"* equal to *"Yes"* and the *"0"* to *"No"*, since there is only `r sum(cv$following_company_page == 'Yeso')` observation with the value *"Yeso"*, I will delete that row.
+
+```{r}
+cv <- cv %>%
+  mutate(CompanyFollower = ifelse(following_company_page %in% c(0, "No"), "No",
+                                  ifelse(following_company_page %in% c(1, "Yes"), "Yes", NA)))
+```
+
+```{r}
+# Function to impute mode
+impute_mode <- function(x) {
+  mode_value <- names(sort(table(x), decreasing = TRUE))[1]
+  x[x == "NA" | is.na(x)] <- mode_value
+  return(x)
+}
+
+# Impute mode for the 'PreferredLocation' column
+cv$CompanyFollower <- impute_mode(cv$CompanyFollower)
+```
+
+```{r}
+
+library(ggplot2)
+library(viridis)
+
+cv %>%
+  group_by(CompanyFollower, Taken_product) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(factor(CompanyFollower), count), y = count, fill = Taken_product)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  coord_flip() +
+  labs(title = "Customer Following Page  & Buying a Ticket",
+       x = "Customer Follow's Page",
+       y = "Proportion",
+       fill = "Buys a ticket next month") +
+  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
+  
+  # Adjusting theme and appearance
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+### 5.2.2. Clean the **member_in_family** column
+
+The **member_in_family** column should have only *1, 2, 3, 4, 5 and 10*, but I found that it contains the following *`r unique(cv$member_in_family)`*. Which are distributed by the following order:
+
+-   **1 :** `r sum(cv$member_in_family == 1)`
+-   **2 :** `r sum(cv$member_in_family == 2)`
+-   **3 :** `r sum(cv$member_in_family == 3)`
+-   **4 :** `r sum(cv$member_in_family == 4)`
+-   **5 :** `r sum(cv$member_in_family == 5)`
+-   **10 :** `r sum(cv$member_in_family == 10)`
+-   **Three:** `r sum(cv$member_in_family == "Three")`
+
+**Action Plan:** Collapse the **member_in_family** values to *1, 2, 3, 4, 5, 10* and the observations containing the *"Three"* values, equal to *"3"* and given that we only have `r sum(cv$member_in_family == 5)` for family size of 5 and `r sum(cv$member_in_family == 10)` for family size of 10, I am going to collapse them into a value called "5+" so that it does not affect the model prediction
+
+```{r}
+cv <- cv %>%
+  mutate(FamilyMembers = case_when(
+    member_in_family == "Three" ~ "3",
+    member_in_family %in% c("5", "10") ~ "5+",
+    TRUE ~ as.character(member_in_family)
+  ))
+```
+
+#### 5.2.2.1. Graphing the **member_in_family** column
+
+```{r}
+
+library(ggplot2)
+library(viridis)
+
+cv %>%
+  group_by(FamilyMembers, Taken_product) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(factor(FamilyMembers), count), y = count, fill = Taken_product)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  coord_flip() +
+  labs(title = "Customer Family Member's & Buying a Ticket",
+       x = "Customer Family Member's",
+       y = "Proportion",
+       fill = "Buys a ticket next month") +
+  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
+  
+  # Adjusting theme and appearance
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### 5.2.3. Clean the **working_flag** column
+
+The **working_flag** column should have only *"Yes"* or *"No"* values, but I found that it contains the following *`r unique(cv$working_flag)`*. Which are distributed by the following order:
+
+-   **Yes :** `r sum(cv$working_flag == "Yes")`
+-   **No :** `r sum(cv$working_flag == "No")`
+-   **0 :** `r sum(cv$working_flag == "0")`
+
+**Action Plan:** Collapse the **working_flag** value of 0 to "Yes"
+
+```{r}
+cv$IsWorking <- ifelse(cv$working_flag == "0", "No", as.character(cv$working_flag))
+```
+
+#### 5.2.3.1. Graphing the **working_flag** column
+
+```{r}
+library(ggplot2)
+library(viridis)
+
+cv %>%
+  group_by(IsWorking, Taken_product) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(factor(IsWorking), count), y = count, fill = Taken_product)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  coord_flip() +
+  labs(title = "Customer Prefered Device & Buying a Ticket",
+       x = "Customer Working Status",
+       y = "Proportion",
+       fill = "Buys a ticket next month") +
+  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
+  
+  # Adjusting theme and appearance
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### 5.2.4. Clean the **preferred_device** column
+
+The **preferred_device** column should have only *"iOS"*, *"Android"*, *"iOS and Android"*, *"Tab"*, *"Laptop"*, *"Mobile"* values, but I found that it contains the following *`r unique(cv$preferred_device)`*. Which are distributed by the following order:
+
+-   **iOS and Android :** `r sum(cv$preferred_device == "iOS and Android")`
+-   **iOS :** `r sum(cv$preferred_device == "iOS")`
+-   **ANDROID :** `r sum(cv$preferred_device == "ANDROID")`
+-   **Android :** `r sum(cv$preferred_device == "Android")`
+-   **Android OS :** `r sum(cv$preferred_device == "Android OS")`
+-   **Other :** `r sum(cv$preferred_device == "Other")`
+-   **Others :** `r sum(cv$preferred_device == "Others")`
+-   **Tab :** `r sum(cv$preferred_device == "Tab")`
+-   **Laptop :** `r sum(cv$preferred_device == "Laptop")`
+-   **Mobile :** `r sum(cv$preferred_device == "Mobile")`
+-   **Empty :** `r sum(cv$preferred_device == "")`
+
+**Action Plan:** Collapse the **preferred_device** values to *"Mobile", "Laptop", "Tablet" and "Other"* and the impute the missing values with the mode of the column after collapsing them
+
+```{r}
+# Function to collapse device categories
+collapse_device_categories <- function(device) {
+  device <- tolower(device)
+  if (device %in% c("android", "android os","ios","ios and android", "Mobile")) {
+    return("Mobile")
+  } else if (device %in% c("laptop")) {
+    return("Laptop")
+  } else if (device == "tab") {
+    return("Tablet")
+  } else if (device == "") {
+    return("NA")
+  } else{
+    return("Other")
+  }
+}
+
+# Apply the function to create the new column
+cv$PreferedDevice <- sapply(cv$preferred_device, collapse_device_categories)
+```
+
+Impute the missing values with the mode
+
+```{r}
+# Function to impute mode
+impute_mode <- function(x) {
+  mode_value <- names(sort(table(x), decreasing = TRUE))[1]
+  x[x == "NA" | is.na(x)] <- mode_value
+  return(x)
+}
+
+# Impute mode for the 'PreferredLocation' column
+cv$PreferedDevice <- impute_mode(cv$PreferedDevice)
+```
+
+#### 5.3.4.1. Graphing the **PreferedDevice** column
+
+```{r}
+library(ggplot2)
+library(viridis)
+
+cv %>%
+  group_by(PreferedDevice, Taken_product) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(factor(PreferedDevice), count), y = count, fill = Taken_product)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  coord_flip() +
+  labs(title = "Customer Prefered Device & Buying a Ticket",
+       x = "Customer Prefered Device",
+       y = "Proportion",
+       fill = "Buys a ticket next month") +
+  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
+  
+  # Adjusting theme and appearance
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### 5.2.5. Clean the **preferred_location_type** column
+
+The **preferred_location_type** column should have only "Beach", "Financial", "Historical site", "Medical", "Other", "Big Cities" and "(Other)" values, but I found that it contains the following *`r unique(cv$preferred_location_type)`*. Which are distributed by the following order:
+
+-   **Beach :** `r sum(cv$preferred_location_type == "Beach")`
+-   **Financial :** `r sum(cv$preferred_location_type == "Financial")`
+-   **Historical site :** `r sum(cv$preferred_location_type == "Historical site")`
+-   **Medical :** `r sum(cv$preferred_location_type == "Medical")`
+-   **Big Cities :** `r sum(cv$preferred_location_type == "Big Cities")`
+-   **Other :** `r sum(cv$preferred_location_type == "Other")`
+-   **Game :** `r sum(cv$preferred_location_type == "Game")`
+-   **Social media :** `r sum(cv$preferred_location_type == "Social media")`
+-   **Entertainment :** `r sum(cv$preferred_location_type == "Entertainment")`
+-   **Tour and Travel :** `r sum(cv$preferred_location_type == "Tour and Travel")`
+-   **Tour Travel :** `r sum(cv$preferred_location_type == "Tour Travel")`
+-   **Movie :** `r sum(cv$preferred_location_type == "Movie")`
+-   **OTT(Over-the-top media services) :** `r sum(cv$preferred_location_type == "OTT")`
+-   **Trekking :** `r sum(cv$preferred_location_type == "Trekking")`
+-   **Hill Stations :** `r sum(cv$preferred_location_type == "Hill Stations")`
+-   **Empty :** `r sum(cv$preferred_location_type == "")`
+
+**Action Plan:** Collapse the **preferred_location_type** values to *"Metropolitan Focus", "Natural Exploration", "Cultural Exploration", "Media and Entertainment"* and the observations from the other categories to be merged into the *"Other"* category given that their frequency is not very significant and it might affect my model's results, the missing values will be imputed with the mode of the column after I collapse them
+
+```{r}
+
+# Function to collapse categories
+collapse_categories <- function(category) {
+  if (category %in% c("Financial", "Big Cities", "Medical")) {
+    return("Metropolitan Focus")
+  } else if (category %in% c("Beach", "Trekking", "Hill Stations")) {
+    return("Natural Exploration")
+  } else if (category %in% c("Tour and Travel", "Historical site")) {
+    return("Cultural Exploration")
+  } else if (category %in% c("Game", "Social Media", "Entertainment", "Movie", "OTT")) {
+    return("Media and Entertainment")
+  } else if (category == "") {
+    return("NA")
+  } else {
+    return("Other")
+  }
+}
+
+# Apply the function to create the new column
+cv$PreferredLocation <- sapply(cv$preferred_location_type, collapse_categories)
+```
+
+Impute the mode in the missing values
+
+```{r}
+# Function to impute mode
+impute_mode <- function(x) {
+  mode_value <- names(sort(table(x), decreasing = TRUE))[1]
+  x[x == "NA" | is.na(x)] <- mode_value
+  return(x)
+}
+
+# Impute mode for the 'PreferredLocation' column
+cv$PreferredLocation <- impute_mode(cv$PreferredLocation)
+```
+
+#### 5.2.5.1. Graphing the **PreferredLocation** column
+
+```{r}
+library(ggplot2)
+library(viridis)
+
+cv %>%
+  group_by(PreferredLocation, Taken_product) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(factor(PreferredLocation), count), y = count, fill = Taken_product)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  coord_flip() +
+  labs(title = "Customer Prefered Location & Buying a Ticket",
+       x = "Preferred Travelling Location",
+       y = "Proportion",
+       fill = "Buys a ticket next month") +
+  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
+  
+  # Adjusting theme and appearance
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### 5.2.6. Clean the **yearly_avg_Outstation_checkins** column
+
+The **yearly_avg_Outstation_checkins** `r str(cv$yearly_avg_Outstation_checkins)` column should have only *1, 2, 3, 7, 9 and 10* values, but I found that it contains the following *`r unique(cv$yearly_avg_Outstation_checkins)`*. Which are distributed by the following order:
+
+-   **1 :** `r sum(cv$yearly_avg_Outstation_checkins == "1")`
+-   **2 :** `r sum(cv$yearly_avg_Outstation_checkins == "2")`
+-   **3 :** `r sum(cv$yearly_avg_Outstation_checkins == "3")`
+-   **4 :** `r sum(cv$yearly_avg_Outstation_checkins == "4")`
+-   **5 :** `r sum(cv$yearly_avg_Outstation_checkins == "5")`
+-   **6 :** `r sum(cv$yearly_avg_Outstation_checkins == "6")`
+-   **7 :** `r sum(cv$yearly_avg_Outstation_checkins == "7")`
+-   **8 :** `r sum(cv$yearly_avg_Outstation_checkins == "8")`
+-   **9 :** `r sum(cv$yearly_avg_Outstation_checkins == "9")`
+-   **10 :** `r sum(cv$yearly_avg_Outstation_checkins == "10")`
+-   **11 :** `r sum(cv$yearly_avg_Outstation_checkins == "11")`
+-   **12 :** `r sum(cv$yearly_avg_Outstation_checkins == "12")`
+-   **13 :** `r sum(cv$yearly_avg_Outstation_checkins == "13")`
+-   **14 :** `r sum(cv$yearly_avg_Outstation_checkins == "14")`
+-   **15 :** `r sum(cv$yearly_avg_Outstation_checkins == "15")`
+-   **16 :** `r sum(cv$yearly_avg_Outstation_checkins == "16")`
+-   **17 :** `r sum(cv$yearly_avg_Outstation_checkins == "17")`
+-   **18 :** `r sum(cv$yearly_avg_Outstation_checkins == "18")`\
+-   **20 :** `r sum(cv$yearly_avg_Outstation_checkins == "20")`\
+-   **21 :** `r sum(cv$yearly_avg_Outstation_checkins == "21")`
+-   **22 :** `r sum(cv$yearly_avg_Outstation_checkins == "22")`
+-   **23 :** `r sum(cv$yearly_avg_Outstation_checkins == "23")`\
+-   **24 :** `r sum(cv$yearly_avg_Outstation_checkins == "24")`
+-   **25 :** `r sum(cv$yearly_avg_Outstation_checkins == "25")`
+-   **26 :** `r sum(cv$yearly_avg_Outstation_checkins == "26")`\
+-   **27 :** `r sum(cv$yearly_avg_Outstation_checkins == "27")`
+-   **28 :** `r sum(cv$yearly_avg_Outstation_checkins == "28")`
+-   **29 :** `r sum(cv$yearly_avg_Outstation_checkins == "29")`
+-   **30 :** `r sum(cv$yearly_avg_Outstation_checkins == "30")`
+-   **Asterisk :** `r sum(cv$yearly_avg_Outstation_checkins == "*")`
+-   **Empty :** `r sum(cv$yearly_avg_Outstation_checkins == "")`
+
+```{r}
+# Assuming cv is your data frame
+cv$yearly_avg_Outstation_checkins <- as.numeric(as.character(cv$yearly_avg_Outstation_checkins))
+
+
+# Assuming cv is your data frame
+cv$YearlyAvgCheckIns <- ifelse(cv$yearly_avg_Outstation_checkins <= 5, "1-5",
+                               ifelse(cv$yearly_avg_Outstation_checkins <= 10, "5-10",
+                                      ifelse(cv$yearly_avg_Outstation_checkins <= 15, "10-15",
+                                             ifelse(cv$yearly_avg_Outstation_checkins <= 20, "15-20", "20+")
+                                      )
+                               ))
+
+```
+
+Impute the mode in the missing values
+
+```{r}
+# Function to impute mode
+impute_mode <- function(x) {
+  mode_value <- names(sort(table(x), decreasing = TRUE))[1]
+  x[x == "NA" | is.na(x)] <- mode_value
+  return(x)
+}
+
+# Impute mode for the 'YearlyAvgCheckIns' column
+cv$YearlyAvgCheckIns <- impute_mode(cv$YearlyAvgCheckIns)
+```
+
+#### 5.2.5.1. Graphing the **YearlyAvgCheckIns** column
+
+```{r}
+library(ggplot2)
+library(viridis)
+
+cv %>%
+  group_by(YearlyAvgCheckIns, Taken_product) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(factor(YearlyAvgCheckIns), count), y = count, fill = Taken_product)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  coord_flip() +
+  labs(title = "Average Customer Check-In and Ticket Purchase Proportion",
+       x = "Yearly Average Customer Check-In's",
+       y = "Proportion",
+       fill = "Buys a ticket next month") +
+  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
+  
+  # Adjusting theme and appearance
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### 5.2.7. Clean the **Adult_flag** column
+
+The **Adult_flag** column should have only *Yes or No* values, but I found that it contains the following *`r unique(cv$Adult_flag)`*. Which are distributed by the following order:
+
+-   **0 :** `r sum(cv$Adult_flag == "0")`
+-   **1 :** `r sum(cv$Adult_flag == "1")`
+-   **2 :** `r sum(cv$Adult_flag == "2")`
+-   **3 :** `r sum(cv$Adult_flag == "3 ")`
+-   **NA :** `r sum(cv$Adult_flag == "NA")`
+
+**Action Plan:** Collapse the **Adult_flag** values to *Yes or No*, I will make all the values greater than 0 count as a *Yes* meaning that the customer is an Adult, and the rest a *No*, the missing values will be imputed with the mode of the column after I collapse them
+
+```{r}
+# Assuming cv is your data frame
+cv$IsAdult <- ifelse(cv$Adult_flag == 0, "No", "Yes")
+```
+
+Impute the null values with the mode
+
+```{r}
+# Function to impute mode
+impute_mode <- function(x) {
+  mode_value <- names(sort(table(x), decreasing = TRUE))[1]
+  x[x == "NA" | is.na(x)] <- mode_value
+  return(x)
+}
+
+# Impute mode for the 'IsAdult' column
+cv$IsAdult <- impute_mode(cv$IsAdult)
+```
+
+#### 5.2.7.1. Graphing the **IsAdult** column
+
+```{r}
+library(ggplot2)
+library(viridis)
+
+cv %>%
+  group_by(IsAdult, Taken_product) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(factor(IsAdult), count), y = count, fill = Taken_product)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  coord_flip() +
+  labs(title = "Customer Group & Buying a Ticket",
+       x = "Adult Customers",
+       y = "Proportion",
+       fill = "Buys a ticket next month") +
+  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
+  
+  # Adjusting theme and appearance
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### 5.3.5. Impute the median and mode of the column in all columns that have missing values
+
+RandomForests cannot handle missing values so we have to do something. Preferably, we would not delete data, instead we impute
+
+```{r}
+# Impute the median on NA values in the column Yearly_avg_view_on_travel_page 
+cv$Yearly_avg_view_on_travel_page[is.na(cv$Yearly_avg_view_on_travel_page)] = median(cv$Yearly_avg_view_on_travel_page, na.rm = TRUE)
+
+# Impute the median on NA values in the column total_likes_on_outstation_checkin_given
+cv$total_likes_on_outstation_checkin_given[is.na(cv$total_likes_on_outstation_checkin_given)] = median(cv$total_likes_on_outstation_checkin_given, na.rm = TRUE)
+
+# Impute the median on NA values in the column Yearly_avg_comment_on_travel_page
+cv$Yearly_avg_comment_on_travel_page[is.na(cv$Yearly_avg_comment_on_travel_page)] = median(cv$Yearly_avg_comment_on_travel_page, na.rm = TRUE)
+
+# Impute the median on NA values in the column Daily_Avg_mins_spend_on_traveling_page
+cv$Daily_Avg_mins_spend_on_traveling_page[is.na(cv$Daily_Avg_mins_spend_on_traveling_page)] = median(cv$Daily_Avg_mins_spend_on_traveling_page, na.rm = TRUE)
+
+# Impute the median on NA values in the column Daily_Avg_mins_spend_on_traveling_page
+cv$yearly_avg_Outstation_checkins[is.na(cv$yearly_avg_Outstation_checkins)] = median(cv$yearly_avg_Outstation_checkins, na.rm = TRUE)
+
+```
+
+#### 5.3.5. Remove the non-wanted columns
+
+```{r}
+cv = subset(cv, select = -c(UserID, preferred_device, preferred_location_type, member_in_family, following_company_page, member_in_family, Adult_flag, working_flag))
+#head(cv)
+```
+
+#### 5.3.7. Rename the column header to a more readable name
+
+```{r}
+# Dictionary mapping old column names to new names
+column_name_mapping <- c(
+  "Taken_product"                                 = "BuysProduct",                              
+  "Yearly_avg_view_on_travel_page"                = "YearlyAvgPageVisits",           
+  "total_likes_on_outstation_checkin_given"       = "TotalCheckInLikesGiven",   
+  "yearly_avg_Outstation_checkins"                = "YearlyAvgCheckIns",       
+  "Yearly_avg_comment_on_travel_page"             = "YearlyAvgComments",       
+  "total_likes_on_outofstation_checkin_received"  = "TotalCheckInLikesReceived",
+  "week_since_last_outstation_checkin"            = "WeeksSinceLastCheckIn",        
+  "montly_avg_comment_on_company_page"            = "MonthAvgComments",         
+  "travelling_network_rating"                     = "TravelNetworkRating",                   
+  "Daily_Avg_mins_spend_on_traveling_page"        = "Avg_DailyMinPerView",
+  "CompanyFollower"                               = "CompanyFollower",
+  "FamilyMembers"                                 = "FamilyMembers",
+  "IsWorking"                                     = "IsWorking" ,
+  "PreferedDevice"                                = "PreferedDevice" ,
+  "PreferredLocation"                             = "PreferredLocation",
+  "YearlyAvgCheckIns"                             = "YearlyAvgCheckIns" , 
+  "IsAdult"                                       = "IsAdult"
+ )
+
+# Rename the columns
+names(cv) <- column_name_mapping
+
+```
+
+```{r}
+# Save the dataframe to the same CSV file
+write.csv(cv, 'Data/CustomerBehaviour.csv', row.names = FALSE)
+# Saving clean dataset 
+summary(cv)
+```
+
+# 5. Predictive Modelling
+
+Here
+
+```{r}
+rm(list = ls())
+```
+
+```{r}
+library(rpart)
+library(rpart.plot)
+library(ggplot2)
+library(pROC)
+library(explore)
+library(RColorBrewer)
+library(tidyverse)
+library(dplyr)
+library(kableExtra)
+library(rmarkdown)
+library(randomForest)
+```
+
+```{r}
+# Importing clean dataset
+cb_data <- read.csv('Data/CustomerBehaviour.csv', stringsAsFactors = TRUE)
+```
+
+```{r}
+RNGkind(sample.kind = "default")
+set.seed(2291352)
+```
+
+```{r}
+train.idx = sample(x=1:nrow(cb_data), size = floor(0.8*nrow(cb_data)))
+train.df = cb_data[train.idx,]
+test.df = cb_data[-train.idx,]
+```
+
+```{r}
+str(train.df)
+```
+
+```{r}
+myforest = randomForest(BuysProduct ~ .,
+              data   = train.df,
+              ntree  = 1000,
+              mtry   = 4
+              )
+```
+
+```{r}
+# A sequence of B (# of trees) that we want to try, we'll loop through each unique element in the vector below
+mtry <- seq(1, 16)
+
+# Make room for B, OOB error
+keeps <- data.frame(mtry = rep(NA, length(mtry)),
+                    OOB_err_rate = rep(NA, length(mtry)))
+
+for (idx in 1:length(mtry)) {
+  print(paste0("Fitting m = ", mtry[idx]))
+  tempforest <- randomForest(BuysProduct ~ .,
+                              data = train.df,
+                              ntree = 1000,
+                              mtry = mtry[idx])  # Dynamically changing mtry value
+  
+  # Record how many trees we tried
+  keeps[idx, "mtry"] <- mtry[idx]
+  
+  # Record what our OOB error rate was
+  keeps[idx, "OOB_err_rate"] <- mean(predict(tempforest) != train.df$BuysProduct)
+}
+
+# Find the row with the minimum OOB error rate
+min_error_row <- keeps[which.min(keeps$OOB_err_rate), ]
+
+# Plotting
+library(ggplot2)
+
+# Create the plot
+p <- ggplot(data = keeps) +
+  geom_line(aes(x = mtry, y = OOB_err_rate)) +
+  geom_vline(xintercept = min_error_row$mtry, linetype = "dashed", color = "red") +
+  geom_text(aes(label = min_error_row$mtry, x = min_error_row$mtry, y = min_error_row$OOB_err_rate + 0.01), color = "red") +
+  theme_bw() +
+  labs(x = "mtry", y = "OOB error rate")
+
+# Print the plot
+print(p)
+
+```
+
+The above results suggest as m of `r min_error_row$mtry` would be ideal for minimizing OOB rate.
+
+```{r }
+FinalForest = randomForest(BuysProduct ~ .,
+              data   = train.df,
+              ntree  = 1000,
+              mtry   =  min_error_row$mtry,
+              importance = TRUE
+              )
+FinalForest
+```
+
+```{r}
+pi_hat = predict(FinalForest, test.df, type = "prob")[,"Yes"]
+```
+
+```{r}
+rocCurve = roc(response = test.df$BuysProduct,
+               predictor = pi_hat,
+               levels = c("No","Yes"))
+plot(rocCurve,print.thres = TRUE, print.auc = TRUE)
+
+pi_star <- coords(rocCurve, "best", ret = "threshold")$threshold[1]
+sens <- coords(rocCurve, "best", ret = "sensitivity")$sensitivity
+spec <- coords(rocCurve, "best", ret = "specificity")$specificity
+AUC <- as.numeric(rocCurve$auc)
+```
+
+If we set pi\* = `r coords(rocCurve, "best", ret = "threshold")$threshold[1]` we are guaranteed a specificity of `r coords(rocCurve, "best", ret = "sensitivity")$specificity` and a sensitivity of `r coords(rocCurve, "best", ret = "sensitivity")$sensitivity`
+
+So, we may translate that to:
+
+-   AUC =`r round(100*AUC, digits = 2)` (varies between .5 and 1 - closer to 1 is better)
+-   Sensitivity: We correctly predict when a customer **will BUY** a ticket `r round(100*sens, digits = 2) `% of the time, when they actually end up buying a ticket.
+-   Specificity: We correctly predict when a customer **will NOT BUY** the ticket `r round(100*spec, digits = 2)`% of the time, when they actually never end up buying a ticket.
+
+
+```{r}
+# Make a column of predicted values (Yes or No)
+pi_star = coords(rocCurve, "best", ret = "threshold")$threshold
+test.df$forestPred= ifelse(pi_hat>pi_star, "Yes", "No")
+```
+
+Plot variable importance plot
+
+```{r}
+vi <- as.data.frame(varImpPlot(FinalForest, type = 1))
+vi$Variable <- rownames(vi)
+ggplot(data = vi) +
+geom_bar(aes(x = reorder(Variable,MeanDecreaseAccuracy), weight = MeanDecreaseAccuracy),
+position ="identity") +
+coord_flip() +
+labs( x = "Variable Name",y = "Importance")
+```
+
+# 6. Descriptive Modelling
+
+## 6.1.1. Create a bernoulli random variable
+
+```{r }
+cb_data$Purchase_bin = ifelse(cb_data$BuysProduct == "Yes",1,0)
+```
+
+## 6.2. Fit models with different x variables based on the feature selection results
+
+```{r}
+# Extract variable names from vi dataframe in descending order of importance
+variable_order <- vi$Variable[order(-vi$MeanDecreaseAccuracy)]
+
+# Create an empty dataframe to store results
+result_df <- data.frame(Model = character(), AIC = numeric(), BIC = numeric(), Features = character(), stringsAsFactors = FALSE)
+
+# Loop through each model
+for (i in seq_along(variable_order)) {
+  # Build formula for the model
+  formula <- as.formula(paste("Purchase_bin ~", paste(variable_order[1:i], collapse = " + ")))
+
+  # Fit the model
+  model <- glm(formula, data = cb_data, family = binomial(link = "logit"))
+
+  # Get AIC and BIC
+  aic_value <- AIC(model)
+  bic_value <- BIC(model)
+
+  # Get model features
+  features <- paste(variable_order[1:i], collapse = ", ")
+
+  # Store results in the dataframe
+  result_df <- rbind(result_df, data.frame(Model = paste("model_", i, sep = ""), AIC = round(aic_value), BIC = round(bic_value), Features = features, stringsAsFactors = FALSE))
+}
+
+```
+
+## 6.3. Compare the results of each model
+
+The follwoing graph will showcase the AIC and BIC for each model made, here are the variables that each model had
+
+-   **Model 1 :** `r result_df$Features[1]`
+-   **Model 2 :** `r result_df$Features[2]`
+-   **Model 3 :** `r result_df$Features[3]`
+-   **Model 4 :** `r result_df$Features[4]`
+-   **Model 5 :** `r result_df$Features[5]`
+-   **Model 6 :** `r result_df$Features[6]`
+-   **Model 7 :** `r result_df$Features[7]`
+-   **Model 8 :** `r result_df$Features[8]`
+-   **Model 9 :** `r result_df$Features[9]`
+-   **Model 10 :** `r result_df$Features[10]`
+-   **Model 11 :** `r result_df$Features[11]`
+-   **Model 12 :** `r result_df$Features[12]`
+-   **Model 13 :** `r result_df$Features[13]`
+-   **Model 14 :** `r result_df$Features[14]`
+-   **Model 15 :** `r result_df$Features[15]`
+-   **Model 16 :** `r result_df$Features[16]`
+
+```{r }
+result_df$Model <- factor(result_df$Model, levels = unique(result_df$Model))
+
+# Your ggplot code
+ggplot(data=result_df, aes(x=Model, y=AIC, group=1)) +
+  geom_line(aes(color = "AIC")) +
+  geom_point(aes(color = "AIC")) +
+  
+  geom_line(aes(y = BIC, color = "BIC")) +
+  geom_point(aes(y = BIC, color = "BIC")) +
+  
+  # Adjust the theme to increase space between x-axis labels
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  
+  # Customize colors
+  scale_color_manual(values = c("AIC" = "blue", "BIC" = "red"))+
+
+ # Label y-axis
+  labs(y = "AIC & BIC")
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+# References
+
+1.  [R Markdowon Cheat-Sheet](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+2.  [Dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal)
