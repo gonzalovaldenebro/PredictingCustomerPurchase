@@ -7,14 +7,29 @@ date: "2023-11-14"
 # STAT 172: Generalized Linear Models and Data Mining Final Project
 
 ## Gonzalo Valdenebro
+[LinkedIn](https://www.linkedin.com/in/gonzalo-valdenebro-035392157/) \| [GitHub](https://github.com/gonzalovaldenebro)
 
-[LinkedIn](https://www.linkedin.com/in/gonzalo-valdenebro-035392157/) | [GitHub](https://github.com/gonzalovaldenebro)
 
-## 1. Project Motivation
+## 1. Introduction to data
 
-For this project, I am interested in predicting whether a customer will buy a ticket next month in a tourism ticketing website.
+This [dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal) provides a snapshot of user behavior on a social media platform associated with a tourism company. It includes essential information such as user identification, ticket purchase predictions, and key metrics related to user engagement, preferences, and demographic details. The [dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal) aims to unveil insights that can inform strategic decisions to enhance the customer experience and increase ticket sales for the tourism company.
 
-## 2. Cleaning the environment and loading packages
+
+## 2. Research Questions of the client
+### Research Question 1: Impact of Social Engagement
+
+Client's Inquiry: We were curious about the impact of social engagement, specifically regarding check-in likes. How does a customer's involvement in giving likes during other check-ins influence their likelihood of purchasing a ticket next month?
+
+### Research Question 2: Effect of Company Engagement
+
+Client's Inquiry: The client is interested in understanding the influence of customers following their company's account on their likelihood of purchasing a ticket. How does being a CompanyFollower affect the chances of buying a ticket next month?
+
+### Research Question 3: Website Interaction and Ticket Purchases
+
+Client's Inquiry: The client is interested in exploring the relationship between the number of visits to our website and the likelihood of customers purchasing a ticket. How do YearlyAvgPageVisits correlate with the odds of buying a ticket next month?
+
+
+## 3. Cleaning the environment and loading packages
 
 ```{r}
 rm(list = ls())
@@ -32,7 +47,7 @@ library(dplyr)
 library(kableExtra)
 ```
 
-## 3. Loading the data
+## 4. Loading the data
 
 ```{r}
 cv = read.csv('Data/CustomerBehaviourTourism.csv', stringsAsFactors = TRUE) 
@@ -40,21 +55,21 @@ cv = read.csv('Data/CustomerBehaviourTourism.csv', stringsAsFactors = TRUE)
 
 This is my data. It is cool. There are `r nrow(cv)` rows in my data.
 
-## 4. Exploratory Data Analysis
+## 5. Exploratory Data Analysis
 
-### 4.1. Exploring the data structure
+### 5.1. Exploring the data structure
 
 ```{r}
 #str(cv)
 ```
 
-### 4.2. Exploring the summary statistics
+### 5.2. Exploring the summary statistics
 
 ```{r}
 #summary(cv)
 ```
 
-### 4.3. Missing Values
+### 5.3. Missing Values
 
 -   **Yearly_avg_view_on_travel_page** *[int]*: `r sum(is.na(cv$Yearly_avg_view_on_travel_page))`
 -   **total_likes_on_outstation_checkin_given** *[int]*: `r sum(is.na(cv$total_likes_on_outstation_checkin_given))`
@@ -62,9 +77,9 @@ This is my data. It is cool. There are `r nrow(cv)` rows in my data.
 -   **Adult_flag** *[int]*: `r sum(is.na(cv$Adult_flag))`
 -   **Daily_Avg_mins_spend_on_traveling_page** *[int]*: `r sum(is.na(cv$Daily_Avg_mins_spend_on_traveling_page))`
 
-## 5. Data Cleaning
+## 6. Data Cleaning
 
-### 5.2.1. Clean the **following_company_page** column
+### 6.2.1. Clean the **following_company_page** column
 
 The **following_company_page** column should be either *"Yes"* or *"No"* values, but I come to find that it contains *`r unique(cv$following_company_page)`*. Which are distributed by the following order:
 
@@ -119,7 +134,7 @@ cv %>%
 
 ```
 
-### 5.2.2. Clean the **member_in_family** column
+### 6.2.2. Clean the **member_in_family** column
 
 The **member_in_family** column should have only *1, 2, 3, 4, 5 and 10*, but I found that it contains the following *`r unique(cv$member_in_family)`*. Which are distributed by the following order:
 
@@ -142,7 +157,7 @@ cv <- cv %>%
   ))
 ```
 
-#### 5.2.2.1. Graphing the **member_in_family** column
+#### 6.2.2.1. Graphing the **member_in_family** column
 
 ```{r}
 
@@ -167,7 +182,7 @@ cv %>%
 
 ```
 
-### 5.2.3. Clean the **working_flag** column
+### 6.2.3. Clean the **working_flag** column
 
 The **working_flag** column should have only *"Yes"* or *"No"* values, but I found that it contains the following *`r unique(cv$working_flag)`*. Which are distributed by the following order:
 
@@ -181,7 +196,7 @@ The **working_flag** column should have only *"Yes"* or *"No"* values, but I fou
 cv$IsWorking <- ifelse(cv$working_flag == "0", "No", as.character(cv$working_flag))
 ```
 
-#### 5.2.3.1. Graphing the **working_flag** column
+#### 6.2.3.1. Graphing the **working_flag** column
 
 ```{r}
 library(ggplot2)
@@ -205,7 +220,7 @@ cv %>%
 
 ```
 
-### 5.2.4. Clean the **preferred_device** column
+### 6.2.4. Clean the **preferred_device** column
 
 The **preferred_device** column should have only *"iOS"*, *"Android"*, *"iOS and Android"*, *"Tab"*, *"Laptop"*, *"Mobile"* values, but I found that it contains the following *`r unique(cv$preferred_device)`*. Which are distributed by the following order:
 
@@ -258,7 +273,7 @@ impute_mode <- function(x) {
 cv$PreferedDevice <- impute_mode(cv$PreferedDevice)
 ```
 
-#### 5.3.4.1. Graphing the **PreferedDevice** column
+#### 6.3.4.1. Graphing the **PreferedDevice** column
 
 ```{r}
 library(ggplot2)
@@ -282,7 +297,7 @@ cv %>%
 
 ```
 
-### 5.2.5. Clean the **preferred_location_type** column
+### 6.2.5. Clean the **preferred_location_type** column
 
 The **preferred_location_type** column should have only "Beach", "Financial", "Historical site", "Medical", "Other", "Big Cities" and "(Other)" values, but I found that it contains the following *`r unique(cv$preferred_location_type)`*. Which are distributed by the following order:
 
@@ -342,7 +357,7 @@ impute_mode <- function(x) {
 cv$PreferredLocation <- impute_mode(cv$PreferredLocation)
 ```
 
-#### 5.2.5.1. Graphing the **PreferredLocation** column
+#### 6.2.5.1. Graphing the **PreferredLocation** column
 
 ```{r}
 library(ggplot2)
@@ -366,7 +381,7 @@ cv %>%
 
 ```
 
-### 5.2.6. Clean the **yearly_avg_Outstation_checkins** column
+### 6.2.6. Clean the **yearly_avg_Outstation_checkins** column
 
 The **yearly_avg_Outstation_checkins** `r str(cv$yearly_avg_Outstation_checkins)` column should have only *1, 2, 3, 7, 9 and 10* values, but I found that it contains the following *`r unique(cv$yearly_avg_Outstation_checkins)`*. Which are distributed by the following order:
 
@@ -431,7 +446,7 @@ impute_mode <- function(x) {
 cv$YearlyAvgCheckIns <- impute_mode(cv$YearlyAvgCheckIns)
 ```
 
-#### 5.2.5.1. Graphing the **YearlyAvgCheckIns** column
+#### 6.2.5.1. Graphing the **YearlyAvgCheckIns** column
 
 ```{r}
 library(ggplot2)
@@ -455,7 +470,7 @@ cv %>%
 
 ```
 
-### 5.2.7. Clean the **Adult_flag** column
+### 6.2.7. Clean the **Adult_flag** column
 
 The **Adult_flag** column should have only *Yes or No* values, but I found that it contains the following *`r unique(cv$Adult_flag)`*. Which are distributed by the following order:
 
@@ -486,7 +501,7 @@ impute_mode <- function(x) {
 cv$IsAdult <- impute_mode(cv$IsAdult)
 ```
 
-#### 5.2.7.1. Graphing the **IsAdult** column
+#### 6.2.7.1. Graphing the **IsAdult** column
 
 ```{r}
 library(ggplot2)
@@ -510,7 +525,7 @@ cv %>%
 
 ```
 
-#### 5.3.5. Impute the median and mode of the column in all columns that have missing values
+#### 6.3.5. Impute the median and mode of the column in all columns that have missing values
 
 RandomForests cannot handle missing values so we have to do something. Preferably, we would not delete data, instead we impute
 
@@ -532,14 +547,14 @@ cv$yearly_avg_Outstation_checkins[is.na(cv$yearly_avg_Outstation_checkins)] = me
 
 ```
 
-#### 5.3.5. Remove the non-wanted columns
+#### 6.3.5. Remove the non-wanted columns
 
 ```{r}
 cv = subset(cv, select = -c(UserID, preferred_device, preferred_location_type, member_in_family, following_company_page, member_in_family, Adult_flag, working_flag))
 #head(cv)
 ```
 
-#### 5.3.7. Rename the column header to a more readable name
+#### 6.3.7. Rename the column header to a more readable name
 
 ```{r}
 # Dictionary mapping old column names to new names
@@ -575,14 +590,29 @@ write.csv(cv, 'Data/CustomerBehaviour.csv', row.names = FALSE)
 summary(cv)
 ```
 
-# 5. Predictive Modelling
+# 7. Predictive Modelling
 
-Here
+For my predictive modelling, I choose the Random Forest given its simplicity to execute. Some of reasons why this model was the correct for this data and research problem was: 
 
+1. Automatic Variable Selection: 
+- We get automatic variable selection, importance ranking so I am able to simply and fast collect the best variables for later tunning. 
+
+2. Ensemble Benefits:
+- Random Forest is an ensemble method, combining multiple trees to improve accuracy and generalization, making it more robust than individual models.
+
+3. Reduction of Overfitting:
+- The algorithm's inherent randomness helps mitigate overfitting, enhancing the model's ability to generalize well to unseen data.
+
+4. Handling Complexity:
+- Random Forest excels at capturing complex relationships and non-linear patterns in data, making it suitable for classification tasks with intricate decision boundaries.
+
+
+## 7.1. Clean the environmnet
 ```{r}
 rm(list = ls())
 ```
 
+## 7.2. Load packages required
 ```{r}
 library(rpart)
 library(rpart.plot)
@@ -597,26 +627,31 @@ library(rmarkdown)
 library(randomForest)
 ```
 
+## 7.3. Read in cleaned data
 ```{r}
 # Importing clean dataset
 cb_data <- read.csv('Data/CustomerBehaviour.csv', stringsAsFactors = TRUE)
+
 ```
 
+## 7.4. Splitting data for train and test
+
+## 7.4.1. Set seed for reproducibility
 ```{r}
 RNGkind(sample.kind = "default")
 set.seed(2291352)
 ```
 
+## 7.4.2. Split train and test data
+
+I will be using a split of 80% for training and 20% for test data
 ```{r}
 train.idx = sample(x=1:nrow(cb_data), size = floor(0.8*nrow(cb_data)))
 train.df = cb_data[train.idx,]
 test.df = cb_data[-train.idx,]
 ```
 
-```{r}
-str(train.df)
-```
-
+## 7.5. Fitting a baseline model
 ```{r}
 myforest = randomForest(BuysProduct ~ .,
               data   = train.df,
@@ -624,6 +659,12 @@ myforest = randomForest(BuysProduct ~ .,
               mtry   = 4
               )
 ```
+
+## 7.6. Tunning a random forest
+
+Here I will tune a model by fitting and plotting the best (mtry), or in other words, the number of variables to randomly sample as candidates at each split. I am actually interested in finding the mtry that accounts for the lowest Out-of-Bag Error (OOB Error Rate), this rate is a measure of how well the model generalizes to unseen data. 
+
+Therefore, my tuning will be to loop trough all the possible mtry's (number of variables the dataset has), record the OOB Error Rate and then pick the lowest for my further tunned model. 
 
 ```{r}
 # A sequence of B (# of trees) that we want to try, we'll loop through each unique element in the vector below
@@ -650,10 +691,10 @@ for (idx in 1:length(mtry)) {
 # Find the row with the minimum OOB error rate
 min_error_row <- keeps[which.min(keeps$OOB_err_rate), ]
 
-# Plotting
+
 library(ggplot2)
 
-# Create the plot
+
 p <- ggplot(data = keeps) +
   geom_line(aes(x = mtry, y = OOB_err_rate)) +
   geom_vline(xintercept = min_error_row$mtry, linetype = "dashed", color = "red") +
@@ -661,12 +702,16 @@ p <- ggplot(data = keeps) +
   theme_bw() +
   labs(x = "mtry", y = "OOB error rate")
 
-# Print the plot
+
 print(p)
 
 ```
 
-The above results suggest as m of `r min_error_row$mtry` would be ideal for minimizing OOB rate.
+## 7.7. Tunning a random forest based on the lowest mtry
+
+Now that I have tunned the models, it seems like the lowest OOB Error Rate was found at the **`r min_error_row$mtry`th**, so then I can use that to fine-tune the model. 
+
+Given that the "best mtry", might vary and for reproducibility purposes, the "best mtry" value is directly picked from the above tuning in the fine-tunned model below. By doing so, I make sure that this code is more robust and allows adaptability to changes in new data.
 
 ```{r }
 FinalForest = randomForest(BuysProduct ~ .,
@@ -677,10 +722,21 @@ FinalForest = randomForest(BuysProduct ~ .,
               )
 FinalForest
 ```
+## 7.8. Declaring the value of interest
+
+In this case, I am interested in when the customer DOES buy a ticket next month. The variable in this case that refers to that is the predicted value BuysProduct = Yes, so I specify that in the code below.
 
 ```{r}
 pi_hat = predict(FinalForest, test.df, type = "prob")[,"Yes"]
 ```
+
+## 7.9. Plot the ROC Curve
+
+In order to understand the model predictive capabilities, I will plot the ROC Curve from where I expect to extract: Sensitivity, Specificity and AUC. The following are explained below: 
+
+Sensitivity (True Positive Rate): How good the test is at finding positive cases.
+Specificity (True Negative Rate): How good the test is at correctly identifying negative cases.
+AUC: Represents the ability of a model to distinguish between positive and negative examples.
 
 ```{r}
 rocCurve = roc(response = test.df$BuysProduct,
@@ -694,46 +750,79 @@ spec <- coords(rocCurve, "best", ret = "specificity")$specificity
 AUC <- as.numeric(rocCurve$auc)
 ```
 
-If we set pi\* = `r coords(rocCurve, "best", ret = "threshold")$threshold[1]` we are guaranteed a specificity of `r coords(rocCurve, "best", ret = "sensitivity")$specificity` and a sensitivity of `r coords(rocCurve, "best", ret = "sensitivity")$sensitivity`
+## 7.9.1. Interpreting the ROC Curve results
+
+If we set pi = `r coords(rocCurve, "best", ret = "threshold")$threshold[1]` we are guaranteed a specificity of `r coords(rocCurve, "best", ret = "sensitivity")$specificity` and a sensitivity of `r coords(rocCurve, "best", ret = "sensitivity")$sensitivity`
 
 So, we may translate that to:
 
--   AUC =`r round(100*AUC, digits = 2)` (varies between .5 and 1 - closer to 1 is better)
--   Sensitivity: We correctly predict when a customer **will BUY** a ticket `r round(100*sens, digits = 2) `% of the time, when they actually end up buying a ticket.
--   Specificity: We correctly predict when a customer **will NOT BUY** the ticket `r round(100*spec, digits = 2)`% of the time, when they actually never end up buying a ticket.
+-   AUC =`r round(100*AUC, digits = 2)` (varies between 50% and 100% - closer to 1 is better)
+-   Sensitivity: We correctly predict when a customer **will BUY** a ticket next month `r round(100*sens, digits = 2)`% of the time, when they actually end up buying a ticket.
+-   Specificity: We correctly predict when a customer **will NOT BUY** the ticket next month`r round(100*spec, digits = 2)`% of the time, when they actually never end up buying a ticket.
 
 
+## 7.10. Extracting the feature importance
+
+By looking at the feature importance I expect to to understand how often and how much each feature contributes to making accurate predictions across all the trees in the forest.
 ```{r}
 # Make a column of predicted values (Yes or No)
 pi_star = coords(rocCurve, "best", ret = "threshold")$threshold
 test.df$forestPred= ifelse(pi_hat>pi_star, "Yes", "No")
 ```
 
-Plot variable importance plot
-
+## 7.11. Plotting the feature importance
 ```{r}
-vi <- as.data.frame(varImpPlot(FinalForest, type = 1))
-vi$Variable <- rownames(vi)
+# Extract variable importance
+vi <- data.frame(Variable = rownames(FinalForest$importance),
+                 Importance = FinalForest$importance[, "MeanDecreaseAccuracy"])
+
+# Create the variable importance plot
+library(ggplot2)
 ggplot(data = vi) +
-geom_bar(aes(x = reorder(Variable,MeanDecreaseAccuracy), weight = MeanDecreaseAccuracy),
-position ="identity") +
-coord_flip() +
-labs( x = "Variable Name",y = "Importance")
+  geom_bar(aes(x = reorder(Variable, Importance), 
+               weight = Importance),
+           position = "identity") +
+  coord_flip() +
+  labs(x = "Variable Name", y = "Importance") +
+  ggtitle("Variable Importance Plot for FinalForest Model")
 ```
 
-# 6. Descriptive Modelling
+# 8. Descriptive Modelling
 
-## 6.1.1. Create a bernoulli random variable
+In my analysis, the selection of a Binomial Generalized Linear Model (GLM) with a logit link was deliberate and guided by specific considerations:
+
+1. Binary Outcome Nature:
+- The binary nature of our outcome variable ("Purchase_bin") aligns seamlessly with the inherent strengths of a Binomial GLM.
+
+2. Interpretability through Odds Ratios:
+- The use of logistic regression with a logit link ensures easy interpretation, especially through odds ratios, enhancing the clarity of our findings.
+
+3. Systematic Feature Inclusion:
+- A stepwise approach incorporates features based on importance, controlling model complexity and focusing on relevant variables.
+
+4. Incorporation of Important Features:
+- Utilizing feature importance rankings from a Random Forest model enriches our logistic regression, capturing nuanced relationships.
+
+5. AIC and BIC Model Evaluation:
+- Models are assessed using AIC and BIC, aiding in the selection of the most suitable model by balancing goodness of fit and simplicity.
+
+6. Adaptability to Binomial Data:
+- GLMs are tailored for binomial outcomes, aligning the statistical framework with the distinctive characteristics of our data.
+
+
+## 8.1. Create a bernoulli random variable
 
 ```{r }
 cb_data$Purchase_bin = ifelse(cb_data$BuysProduct == "Yes",1,0)
 ```
 
-## 6.2. Fit models with different x variables based on the feature selection results
+## 8.2. Fit models with different x variables based on the feature selection results
+
+I will extract the feature importance variables from the above plot in order of importance, so that I can later extract the features for each different model. In other words, I will run trough all the models possible based on the importance plot to predict our predicted variable. I will start with the first model only having the most important variable shown on the graph, then I will add one feature at a time, fit that and extract the AIC and BIC.
 
 ```{r}
-# Extract variable names from vi dataframe in descending order of importance
-variable_order <- vi$Variable[order(-vi$MeanDecreaseAccuracy)]
+# Order variable names by importance in descending order
+variable_order <- vi$Variable[order(-vi$Importance)]
 
 # Create an empty dataframe to store results
 result_df <- data.frame(Model = character(), AIC = numeric(), BIC = numeric(), Features = character(), stringsAsFactors = FALSE)
@@ -759,7 +848,7 @@ for (i in seq_along(variable_order)) {
 
 ```
 
-## 6.3. Compare the results of each model
+## 8.3. Compare the results of each model
 
 The follwoing graph will showcase the AIC and BIC for each model made, here are the variables that each model had
 
@@ -783,7 +872,7 @@ The follwoing graph will showcase the AIC and BIC for each model made, here are 
 ```{r }
 result_df$Model <- factor(result_df$Model, levels = unique(result_df$Model))
 
-# Your ggplot code
+# ggplot code
 ggplot(data=result_df, aes(x=Model, y=AIC, group=1)) +
   geom_line(aes(color = "AIC")) +
   geom_point(aes(color = "AIC")) +
@@ -791,74 +880,186 @@ ggplot(data=result_df, aes(x=Model, y=AIC, group=1)) +
   geom_line(aes(y = BIC, color = "BIC")) +
   geom_point(aes(y = BIC, color = "BIC")) +
   
-  # Adjust the theme to increase space between x-axis labels
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   
   # Customize colors
   scale_color_manual(values = c("AIC" = "blue", "BIC" = "red"))+
-
- # Label y-axis
+  
+  # Label y-axis
   labs(y = "AIC & BIC")
 
 ```
 
-```{r}
+Although I am plotting both AIC and BIC, I will use the BIC statistic given the the size of our data could be considered big (number of rows in dataset: **`r nrow(cb_data)`**) and usually for cases where n is larger, more parsimonious criteria, such as BIC, often seem better. On the other hand, cases where n is small, criteria with lower under-fitting rates, such as AIC often seem better.
 
+## 8.4. Final Model Variable Selection
+
+That being said, looking at the above graph I could have chosen Model 15 given that it provides the lowest **BIC**: `r result_df$BIC[15]` but given the purpose of this model (Descriptive), I am taking into account that a more modest model with less features to interpret will help with the interpretation of the model and the feature importance. 
+
+Additionally, looking back at the variable importance plot, the predictor variables that are added to the models after Model 7 (Model 8, Model 9..) represent a 37% or lower model importance, so that provides even more reasons to use Model 7 as my predictor model of choice.
+
+### 8.4.1. Model with lowest BIC
+**Model 15 Predictor Variables:** `r result_df$Features[15]`
+
+### 8.4.2. Modest model 
+**Model 7 Predictor Variables:** `r result_df$Features[7]`
+
+## 8.5. Fitting chosen model
+```{r}
+FinalModel = glm(BuysProduct ~ TotalCheckInLikesReceived + CompanyFollower + YearlyAvgPageVisits 
+                 + IsAdult + TotalCheckInLikesGiven + WeeksSinceLastCheckIn + YearlyAvgCheckIns, 
+          data = cb_data, 
+          family = binomial(link = "logit"))
+
+FinalModel
 ```
 
 ```{r}
 
+# 
+beta <- coef(FinalModel)
+beta
+
+# Exponentiate to get odds ratios
+exp(beta)
+
+#
+confint(FinalModel)
+```
+
+## 8.6. Extracting Model Coefficients
+```{r}
+# Extracting coefficient estimates
+betahat <- coef(FinalModel)
+
+# Extracting the diagonal of the covariance matrix
+var_betahat <- vcov(FinalModel) %>% diag
+
+# Calculating the quantile for a 95% confidence interval
+quantile <- qnorm(c(0.025, 0.975))
+
+# Calculating lower and upper bounds
+lower <- betahat - sqrt(var_betahat) * quantile[2]
+upper <- betahat + sqrt(var_betahat) * quantile[2]
+
+# Exponentiating to get odds ratio CI's
+odds_ratios <- exp(betahat)
+lower_odds <- exp(lower)
+upper_odds <- exp(upper)
+
+# Creating a data frame with variable names and results
+conf_df <- data.frame(
+  Variable = names(betahat),
+  Odds_Ratio = odds_ratios,
+  Lower_Bound = lower_odds,
+  Upper_Bound = upper_odds)
+
+# Adding the OddsResult column based on the condition
+conf_df$OddsResult <- ifelse(conf_df$Odds_Ratio >= 1, "Increase", "Decrease")
+
+# Calculating the factor as a percentage and formatting it
+conf_df$Factor_Percentage <- sprintf("%.4f%%", abs(1 - conf_df$Odds_Ratio) * 100)
+
+# Printing the results
+conf_df
+
+```
+
+## 8.7. Model Coefficient Interpretation
+
+**TotalCheckInLikesReceived:** For each additional like the customer has given in other check-ins, the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[2]`** by a factor of approximately `r conf_df$Odds_Ratio[2]`. 
+
+This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[2]` by approximately `r conf_df$Factor_Percentage[2]` for each additional like in other check-ins, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[2]` and `r conf_df$Upper_Bound[2]`.
+
+**CompanyFollowerYes:** If the individual follows the company account (CompanyFollowerYes),the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[3]`** by a factor of approximately `r conf_df$Odds_Ratio[3]`, times the odds of compared to a customer that does not follow the company account, holding all other vaiables constant. 
+
+This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[3]` by approximately `r conf_df$Factor_Percentage[3]`for each additional like in other check-ins, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[3]` and `r conf_df$Upper_Bound[3]`.
+
+**YearlyAvgPageVisits:** For each additional customer visit to the website on average, the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[4]`** by a factor of approximately `r conf_df$Odds_Ratio[4]`. 
+
+This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[4]` by approximately `r conf_df$Factor_Percentage[4]` for each visit to the website on average per year, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[4]` and `r conf_df$Upper_Bound[4]`.
+
+## 9. Graphing Model Variables
+
+After the model coefficient interpretations, I will include some graphs to better understand the interpretations.
+
+```{r}
+ggplot(data = cb_data)+
+  geom_histogram(aes(x = TotalCheckInLikesReceived, fill = BuysProduct), position = "fill", binwidth = 800) + 
+  scale_fill_brewer("Customer\nBuys Product", palette = "Paired")+
+  labs(x = "Total Check In Likes", y = "Proportion") +
+  facet_wrap(~IsAdult, labeller = labeller(IsAdult = c(No = "Not Adult", Yes = "Adult")))
+```
+
+```{r}
+ggplot(data = cb_data)+
+  geom_histogram(aes(x = YearlyAvgPageVisits, fill = BuysProduct), position = "fill", binwidth = 30) + 
+  scale_fill_brewer("Customer\nBuys Product", palette = "Paired")+
+  labs(x = "Yearly Avg Page Visits", y = "Proportion") +
+  facet_wrap(~CompanyFollower, labeller = labeller(CompanyFollower = c(No = "Not Follower", Yes = "Follows")))
+```
+
+```{r}
+ggplot(data = cb_data)+
+  geom_histogram(aes(x = YearlyAvgCheckIns, fill = BuysProduct), position = "fill", binwidth = 2) + 
+  scale_fill_brewer("Customer\nBuys Product", palette = "Paired")+
+  labs(x = "Yearly Avg Cutomer Check In's", y = "Proportion") +
+  facet_wrap(~IsAdult, labeller = labeller(IsAdult = c(No = "Not Adult", Yes = "Adult")))
 ```
 
 ```{r}
 
-```
-
-```{r}
-
-```
-
-```{r}
+ggplot(data = cb_data)+
+  geom_histogram(aes(x = YearlyAvgPageVisits, fill = BuysProduct), position = "fill", binwidth = 30) + 
+  scale_fill_brewer("Customer\nBuys Product", palette = "Paired")+
+  labs(x = "Yearly Avg Cutomer Check In's", y = "Proportion") +
+  facet_wrap(~IsAdult, labeller = labeller(IsAdult = c(No = "Not Adult", Yes = "Adult")))
 
 ```
 
 ```{r}
-
+ggplot(data = cb_data) +
+  geom_point(aes(x =TotalCheckInLikesReceived, y = YearlyAvgPageVisits , colour = BuysProduct)) +
+  labs(x = "Total Check In Likes Received", y = "Yearly Avg Page Visits") +
+  scale_colour_brewer("Customer\nBuys Product", palette = "Paired")
 ```
 
-```{r}
+## 10. Recommendations
+### Strategic Social Media Engagement:
 
-```
+Let's develop a targeted social media engagement strategy to encourage more customers to follow our company's account. Given the substantial positive impact of being a CompanyFollower, increasing our follower base has the potential to significantly boost ticket sales.
 
-```{r}
+### Enhanced Online Experience:
 
-```
+Despite the small impact, let's consider optimizing our website to enhance the user experience. This could involve personalized content recommendations, targeted promotions, or other features aimed at increasing the conversion rate for website visits to ticket purchases.
 
-```{r}
+### Continuous Monitoring and Iteration:
 
-```
+We'll establish a routine for monitoring the model's performance and iterate as needed. While Model 7 has been chosen for its balance between simplicity and performance, periodic reassessment should be conducted to ensure continued relevance and accuracy.
 
-```{r}
+## 11. Conclusions
 
-```
+### Model Validation for Confidence:
 
-```{r}
+Rest assured that the selected Model 7 demonstrates robust predictive performance, with a high AUC of 99.88%. The model's ability to correctly identify both positive and negative cases (sensitivity and specificity exceeding 99%) instills confidence in its reliability.
 
-```
+### Key Drivers of Ticket Purchases:
 
-```{r}
+CompanyFollower emerges as a key driver of ticket purchases, emphasizing the importance of building and maintaining a strong social media presence. While social interactions (TotalCheckInLikesReceived) play a role, their impact is relatively small and may require a more nuanced understanding.
 
-```
+### Balancing Complexity and Efficiency:
 
-```{r}
+I've opted for Model 7 over more complex models based on the variable importance plot, with variables beyond Model 7 contributing 37% or less to the model. This choice strikes a balance between model performance and computational efficiency, ensuring we get the most value with the least complexity.
 
-```
+### Decision-Making Threshold:
 
-```{r}
+The suggested probability threshold of 0.2325 provides a balanced trade-off between sensitivity and specificity. This threshold can be fine-tuned based on our business considerations and the acceptable level of false positives and false negatives.
 
-```
+### Continuous Improvement Journey:
 
-# References
+Let's emphasize the importance of ongoing monitoring and adaptation. As our customers' behaviors and preferences evolve, the model should be regularly updated to ensure its continued relevance and accuracy in predicting ticket purchases.
+
+# 12. References
 
 1.  [R Markdowon Cheat-Sheet](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
 2.  [Dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal)
