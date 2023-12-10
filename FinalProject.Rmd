@@ -1,33 +1,38 @@
 ---
-title: "FinalProject"
-output: html_document
-date: "2023-11-14"
+title: "Analysis of User Behavior in Tourism Portal"
+output:  
+  html_document:
+    theme: united
+    highlight: tango
+    toc: TRUE
+    toc_depth: 3
+    number_sections: TRUE
+    toc_float:
+      smooth_scroll: FALSE
+      collapsed: FALSE
 ---
 
-# STAT 172: Generalized Linear Models and Data Mining Final Project
-
 ## Gonzalo Valdenebro
-[LinkedIn](https://www.linkedin.com/in/gonzalo-valdenebro-035392157/) \| [GitHub](https://github.com/gonzalovaldenebro)
 
+[LinkedIn](https://www.linkedin.com/in/gonzalo-valdenebro-035392157/) \| [GitHub](https://github.com/gonzalovaldenebro)
 
 ## 1. Introduction to data
 
 This [dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal) provides a snapshot of user behavior on a social media platform associated with a tourism company. It includes essential information such as user identification, ticket purchase predictions, and key metrics related to user engagement, preferences, and demographic details. The [dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal) aims to unveil insights that can inform strategic decisions to enhance the customer experience and increase ticket sales for the tourism company.
 
-
 ## 2. Research Questions of the client
+
 ### Research Question 1: Impact of Social Engagement
 
-Client's Inquiry: We were curious about the impact of social engagement, specifically regarding check-in likes. How does a customer's involvement in giving likes during other check-ins influence their likelihood of purchasing a ticket next month?
+**Client's Inquiry:** We were curious about the impact of social engagement, specifically regarding check-in likes. How does a customer's involvement in giving likes during other check-ins influence their likelihood of purchasing a ticket next month?
 
 ### Research Question 2: Effect of Company Engagement
 
-Client's Inquiry: The client is interested in understanding the influence of customers following their company's account on their likelihood of purchasing a ticket. How does being a CompanyFollower affect the chances of buying a ticket next month?
+**Client's Inquiry:** The client is interested in understanding the influence of customers following their company's account on their likelihood of purchasing a ticket. How does being a CompanyFollower affect the chances of buying a ticket next month?
 
 ### Research Question 3: Website Interaction and Ticket Purchases
 
-Client's Inquiry: The client is interested in exploring the relationship between the number of visits to our website and the likelihood of customers purchasing a ticket. How do YearlyAvgPageVisits correlate with the odds of buying a ticket next month?
-
+**Client's Inquiry:** The client is interested in exploring the relationship between the number of visits to our website and the likelihood of customers purchasing a ticket. How do YearlyAvgPageVisits correlate with the odds of buying a ticket next month?
 
 ## 3. Cleaning the environment and loading packages
 
@@ -45,6 +50,9 @@ library(RColorBrewer)
 library(tidyverse)
 library(dplyr)
 library(kableExtra)
+library(viridis)
+library(RColorBrewer)
+library(bookdown)
 ```
 
 ## 4. Loading the data
@@ -111,27 +119,19 @@ cv$CompanyFollower <- impute_mode(cv$CompanyFollower)
 ```
 
 ```{r}
-
-library(ggplot2)
-library(viridis)
-
 cv %>%
   group_by(CompanyFollower, Taken_product) %>%
   summarise(count = n()) %>%
   ggplot(aes(x = reorder(factor(CompanyFollower), count), y = count, fill = Taken_product)) +
-  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
   labs(title = "Customer Following Page  & Buying a Ticket",
        x = "Customer Follow's Page",
        y = "Proportion",
        fill = "Buys a ticket next month") +
-  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
-  
-  # Adjusting theme and appearance
+  scale_fill_brewer(palette = "Paired") +  # Use "Paired" palette
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
 ```
 
 ### 6.2.2. Clean the **member_in_family** column
@@ -160,23 +160,17 @@ cv <- cv %>%
 #### 6.2.2.1. Graphing the **member_in_family** column
 
 ```{r}
-
-library(ggplot2)
-library(viridis)
-
 cv %>%
   group_by(FamilyMembers, Taken_product) %>%
   summarise(count = n()) %>%
   ggplot(aes(x = reorder(factor(FamilyMembers), count), y = count, fill = Taken_product)) +
-  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
   labs(title = "Customer Family Member's & Buying a Ticket",
        x = "Customer Family Member's",
        y = "Proportion",
        fill = "Buys a ticket next month") +
-  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
-  
-  # Adjusting theme and appearance
+  scale_fill_brewer(palette = "Paired") +  # Use "Paired" palette
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -199,25 +193,19 @@ cv$IsWorking <- ifelse(cv$working_flag == "0", "No", as.character(cv$working_fla
 #### 6.2.3.1. Graphing the **working_flag** column
 
 ```{r}
-library(ggplot2)
-library(viridis)
-
 cv %>%
   group_by(IsWorking, Taken_product) %>%
   summarise(count = n()) %>%
   ggplot(aes(x = reorder(factor(IsWorking), count), y = count, fill = Taken_product)) +
-  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
-  labs(title = "Customer Prefered Device & Buying a Ticket",
+  labs(title = "Customer Working Status & Buying a Ticket",
        x = "Customer Working Status",
        y = "Proportion",
        fill = "Buys a ticket next month") +
-  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
-  
-  # Adjusting theme and appearance
+  scale_fill_brewer(palette = "Paired") +  # Use "Paired" palette
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 
 ### 6.2.4. Clean the **preferred_device** column
@@ -276,25 +264,19 @@ cv$PreferedDevice <- impute_mode(cv$PreferedDevice)
 #### 6.3.4.1. Graphing the **PreferedDevice** column
 
 ```{r}
-library(ggplot2)
-library(viridis)
-
 cv %>%
   group_by(PreferedDevice, Taken_product) %>%
   summarise(count = n()) %>%
   ggplot(aes(x = reorder(factor(PreferedDevice), count), y = count, fill = Taken_product)) +
-  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
   labs(title = "Customer Prefered Device & Buying a Ticket",
        x = "Customer Prefered Device",
        y = "Proportion",
        fill = "Buys a ticket next month") +
-  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
-  
-  # Adjusting theme and appearance
+  scale_fill_brewer(palette = "Paired") +  # Use "Paired" palette
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 
 ### 6.2.5. Clean the **preferred_location_type** column
@@ -322,7 +304,6 @@ The **preferred_location_type** column should have only "Beach", "Financial", "H
 
 ```{r}
 
-# Function to collapse categories
 collapse_categories <- function(category) {
   if (category %in% c("Financial", "Big Cities", "Medical")) {
     return("Metropolitan Focus")
@@ -360,22 +341,17 @@ cv$PreferredLocation <- impute_mode(cv$PreferredLocation)
 #### 6.2.5.1. Graphing the **PreferredLocation** column
 
 ```{r}
-library(ggplot2)
-library(viridis)
-
 cv %>%
   group_by(PreferredLocation, Taken_product) %>%
   summarise(count = n()) %>%
   ggplot(aes(x = reorder(factor(PreferredLocation), count), y = count, fill = Taken_product)) +
-  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
   labs(title = "Customer Prefered Location & Buying a Ticket",
-       x = "Preferred Travelling Location",
+       x = "Customer Prefered Location",
        y = "Proportion",
        fill = "Buys a ticket next month") +
-  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
-  
-  # Adjusting theme and appearance
+  scale_fill_brewer(palette = "Paired") +  # Use "Paired" palette
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -449,22 +425,17 @@ cv$YearlyAvgCheckIns <- impute_mode(cv$YearlyAvgCheckIns)
 #### 6.2.5.1. Graphing the **YearlyAvgCheckIns** column
 
 ```{r}
-library(ggplot2)
-library(viridis)
-
 cv %>%
   group_by(YearlyAvgCheckIns, Taken_product) %>%
   summarise(count = n()) %>%
   ggplot(aes(x = reorder(factor(YearlyAvgCheckIns), count), y = count, fill = Taken_product)) +
-  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
   labs(title = "Average Customer Check-In and Ticket Purchase Proportion",
        x = "Yearly Average Customer Check-In's",
        y = "Proportion",
        fill = "Buys a ticket next month") +
-  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
-  
-  # Adjusting theme and appearance
+  scale_fill_brewer(palette = "Paired") +  # Use "Paired" palette
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -504,22 +475,17 @@ cv$IsAdult <- impute_mode(cv$IsAdult)
 #### 6.2.7.1. Graphing the **IsAdult** column
 
 ```{r}
-library(ggplot2)
-library(viridis)
-
 cv %>%
   group_by(IsAdult, Taken_product) %>%
   summarise(count = n()) %>%
   ggplot(aes(x = reorder(factor(IsAdult), count), y = count, fill = Taken_product)) +
-  geom_bar(stat = "identity", position = "fill") +  # Use position = "fill" to represent proportions
+  geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
   labs(title = "Customer Group & Buying a Ticket",
        x = "Adult Customers",
        y = "Proportion",
        fill = "Buys a ticket next month") +
-  scale_fill_manual(values = c("No" = viridis(2)[1], "Yes" = viridis(2)[3])) +  # Blues for 'No' and 'Yes'
-  
-  # Adjusting theme and appearance
+  scale_fill_brewer(palette = "Paired") +  # Use "Paired" palette
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -592,27 +558,32 @@ summary(cv)
 
 # 7. Predictive Modelling
 
-For my predictive modelling, I choose the Random Forest given its simplicity to execute. Some of reasons why this model was the correct for this data and research problem was: 
+For my predictive modelling, I choose the Random Forest given its simplicity to execute. Some of reasons why this model was the correct for this data and research problem was:
 
-1. Automatic Variable Selection: 
-- We get automatic variable selection, importance ranking so I am able to simply and fast collect the best variables for later tunning. 
+**1. Automatic Variable Selection:** 
 
-2. Ensemble Benefits:
+- We get automatic variable selection, importance ranking so I am able to simply and fast collect the best variables for later tunning.
+
+**2. Ensemble Benefits:** 
+
 - Random Forest is an ensemble method, combining multiple trees to improve accuracy and generalization, making it more robust than individual models.
 
-3. Reduction of Overfitting:
-- The algorithm's inherent randomness helps mitigate overfitting, enhancing the model's ability to generalize well to unseen data.
+**3. Reduction of Overfitting:** 
 
-4. Handling Complexity:
+- The algorithm's inherent randomness helps mitigate over fitting, enhancing the model's ability to generalize well to unseen data.
+
+**4. Handling Complexity:** 
+
 - Random Forest excels at capturing complex relationships and non-linear patterns in data, making it suitable for classification tasks with intricate decision boundaries.
 
+##7.1.Clean the environmnet
 
-## 7.1. Clean the environmnet
 ```{r}
 rm(list = ls())
 ```
 
-## 7.2. Load packages required
+##7.2.Load packages required
+
 ```{r}
 library(rpart)
 library(rpart.plot)
@@ -628,6 +599,7 @@ library(randomForest)
 ```
 
 ## 7.3. Read in cleaned data
+
 ```{r}
 # Importing clean dataset
 cb_data <- read.csv('Data/CustomerBehaviour.csv', stringsAsFactors = TRUE)
@@ -637,6 +609,7 @@ cb_data <- read.csv('Data/CustomerBehaviour.csv', stringsAsFactors = TRUE)
 ## 7.4. Splitting data for train and test
 
 ## 7.4.1. Set seed for reproducibility
+
 ```{r}
 RNGkind(sample.kind = "default")
 set.seed(2291352)
@@ -645,6 +618,7 @@ set.seed(2291352)
 ## 7.4.2. Split train and test data
 
 I will be using a split of 80% for training and 20% for test data
+
 ```{r}
 train.idx = sample(x=1:nrow(cb_data), size = floor(0.8*nrow(cb_data)))
 train.df = cb_data[train.idx,]
@@ -652,6 +626,7 @@ test.df = cb_data[-train.idx,]
 ```
 
 ## 7.5. Fitting a baseline model
+
 ```{r}
 myforest = randomForest(BuysProduct ~ .,
               data   = train.df,
@@ -662,9 +637,9 @@ myforest = randomForest(BuysProduct ~ .,
 
 ## 7.6. Tunning a random forest
 
-Here I will tune a model by fitting and plotting the best (mtry), or in other words, the number of variables to randomly sample as candidates at each split. I am actually interested in finding the mtry that accounts for the lowest Out-of-Bag Error (OOB Error Rate), this rate is a measure of how well the model generalizes to unseen data. 
+Here I will tune a model by fitting and plotting the best (mtry), or in other words, the number of variables to randomly sample as candidates at each split. I am actually interested in finding the mtry that accounts for the lowest Out-of-Bag Error (OOB Error Rate), this rate is a measure of how well the model generalizes to unseen data.
 
-Therefore, my tuning will be to loop trough all the possible mtry's (number of variables the dataset has), record the OOB Error Rate and then pick the lowest for my further tunned model. 
+Therefore, my tuning will be to loop trough all the possible mtry's (number of variables the dataset has), record the OOB Error Rate and then pick the lowest for my further tunned model.
 
 ```{r}
 # A sequence of B (# of trees) that we want to try, we'll loop through each unique element in the vector below
@@ -692,9 +667,6 @@ for (idx in 1:length(mtry)) {
 min_error_row <- keeps[which.min(keeps$OOB_err_rate), ]
 
 
-library(ggplot2)
-
-
 p <- ggplot(data = keeps) +
   geom_line(aes(x = mtry, y = OOB_err_rate)) +
   geom_vline(xintercept = min_error_row$mtry, linetype = "dashed", color = "red") +
@@ -702,14 +674,13 @@ p <- ggplot(data = keeps) +
   theme_bw() +
   labs(x = "mtry", y = "OOB error rate")
 
-
 print(p)
 
 ```
 
 ## 7.7. Tunning a random forest based on the lowest mtry
 
-Now that I have tunned the models, it seems like the lowest OOB Error Rate was found at the **`r min_error_row$mtry`th**, so then I can use that to fine-tune the model. 
+Now that I have tunned the models, it seems like the lowest OOB Error Rate was found at the **`r min_error_row$mtry`th**, so then I can use that to fine-tune the model.
 
 Given that the "best mtry", might vary and for reproducibility purposes, the "best mtry" value is directly picked from the above tuning in the fine-tunned model below. By doing so, I make sure that this code is more robust and allows adaptability to changes in new data.
 
@@ -722,6 +693,7 @@ FinalForest = randomForest(BuysProduct ~ .,
               )
 FinalForest
 ```
+
 ## 7.8. Declaring the value of interest
 
 In this case, I am interested in when the customer DOES buy a ticket next month. The variable in this case that refers to that is the predicted value BuysProduct = Yes, so I specify that in the code below.
@@ -732,11 +704,9 @@ pi_hat = predict(FinalForest, test.df, type = "prob")[,"Yes"]
 
 ## 7.9. Plot the ROC Curve
 
-In order to understand the model predictive capabilities, I will plot the ROC Curve from where I expect to extract: Sensitivity, Specificity and AUC. The following are explained below: 
+In order to understand the model predictive capabilities, I will plot the ROC Curve from where I expect to extract: Sensitivity, Specificity and AUC. The following are explained below:
 
-Sensitivity (True Positive Rate): How good the test is at finding positive cases.
-Specificity (True Negative Rate): How good the test is at correctly identifying negative cases.
-AUC: Represents the ability of a model to distinguish between positive and negative examples.
+*Sensitivity (True Positive Rate):* How good the test is at finding positive cases. *Specificity (True Negative Rate):* How good the test is at correctly identifying negative cases. *AUC:* Represents the ability of a model to distinguish between positive and negative examples.
 
 ```{r}
 rocCurve = roc(response = test.df$BuysProduct,
@@ -752,18 +722,19 @@ AUC <- as.numeric(rocCurve$auc)
 
 ## 7.9.1. Interpreting the ROC Curve results
 
-If we set pi = `r coords(rocCurve, "best", ret = "threshold")$threshold[1]` we are guaranteed a specificity of `r coords(rocCurve, "best", ret = "sensitivity")$specificity` and a sensitivity of `r coords(rocCurve, "best", ret = "sensitivity")$sensitivity`
+So, we may translate the above graph statistics to:
 
-So, we may translate that to:
+-  **π* ** = `r round(100*pi_star, digits = 2)`, π* or Pi Star means that we would predict that a customer will buy a ticket next month when the probability of a cusomter buying a next month is of  `r round(100*pi_star, digits = 2)`.
+-  **AUC** = `r round(100*AUC, digits = 2)` (varies between 50% and 100% - closer to 1 is better).
+-  **Sensitivity:** `r sens`, We correctly predict when a customer **will BUY** a ticket next month `r round(100*sens, digits = 2)`% of the time, when the customer ended up buying a ticket next month.
+-  **Specificity:** `r spec`, We correctly predict when a customer **will NOT BUY** the ticket next month `r round(100*spec, digits = 2)`% of the time, when the customer never ended up buying a ticket next month.
 
--   AUC =`r round(100*AUC, digits = 2)` (varies between 50% and 100% - closer to 1 is better)
--   Sensitivity: We correctly predict when a customer **will BUY** a ticket next month `r round(100*sens, digits = 2)`% of the time, when they actually end up buying a ticket.
--   Specificity: We correctly predict when a customer **will NOT BUY** the ticket next month`r round(100*spec, digits = 2)`% of the time, when they actually never end up buying a ticket.
-
+*The Sensitivity and Specificity shown above will only be archived if we set the Pi Star to* `r round(100*pi_star, digits = 2)`%
 
 ## 7.10. Extracting the feature importance
 
 By looking at the feature importance I expect to to understand how often and how much each feature contributes to making accurate predictions across all the trees in the forest.
+
 ```{r}
 # Make a column of predicted values (Yes or No)
 pi_star = coords(rocCurve, "best", ret = "threshold")$threshold
@@ -771,6 +742,7 @@ test.df$forestPred= ifelse(pi_hat>pi_star, "Yes", "No")
 ```
 
 ## 7.11. Plotting the feature importance
+
 ```{r}
 # Extract variable importance
 vi <- data.frame(Variable = rownames(FinalForest$importance),
@@ -791,24 +763,29 @@ ggplot(data = vi) +
 
 In my analysis, the selection of a Binomial Generalized Linear Model (GLM) with a logit link was deliberate and guided by specific considerations:
 
-1. Binary Outcome Nature:
+**1. Binary Outcome Nature:** 
+
 - The binary nature of our outcome variable ("Purchase_bin") aligns seamlessly with the inherent strengths of a Binomial GLM.
 
-2. Interpretability through Odds Ratios:
+**2. Interpretability through Odds Ratios:** 
+
 - The use of logistic regression with a logit link ensures easy interpretation, especially through odds ratios, enhancing the clarity of our findings.
 
-3. Systematic Feature Inclusion:
+**3. Systematic Feature Inclusion:** 
+
 - A stepwise approach incorporates features based on importance, controlling model complexity and focusing on relevant variables.
 
-4. Incorporation of Important Features:
+**4. Incorporation of Important Features:** 
+
 - Utilizing feature importance rankings from a Random Forest model enriches our logistic regression, capturing nuanced relationships.
 
-5. AIC and BIC Model Evaluation:
+**5. AIC and BIC Model Evaluation:** 
+
 - Models are assessed using AIC and BIC, aiding in the selection of the most suitable model by balancing goodness of fit and simplicity.
 
-6. Adaptability to Binomial Data:
-- GLMs are tailored for binomial outcomes, aligning the statistical framework with the distinctive characteristics of our data.
+**6. Adaptability to Binomial Data:** 
 
+- GLMs are tailored for binomial outcomes, aligning the statistical framework with the distinctive characteristics of our data.
 
 ## 8.1. Create a bernoulli random variable
 
@@ -890,21 +867,24 @@ ggplot(data=result_df, aes(x=Model, y=AIC, group=1)) +
 
 ```
 
-Although I am plotting both AIC and BIC, I will use the BIC statistic given the the size of our data could be considered big (number of rows in dataset: **`r nrow(cb_data)`**) and usually for cases where n is larger, more parsimonious criteria, such as BIC, often seem better. On the other hand, cases where n is small, criteria with lower under-fitting rates, such as AIC often seem better.
+Although I am plotting both AIC and BIC, I will use the BIC statistic given the the size of our data could be considered big (number of rows in dataset: **`r nrow(cb_data)`**) and usually for cases where n is larger, more parsimonious criteria, such as BIC, often seem better. On the other hand, cases where n is small, criteria with lower under-fitting rates, AIC could work better.
 
 ## 8.4. Final Model Variable Selection
 
-That being said, looking at the above graph I could have chosen Model 15 given that it provides the lowest **BIC**: `r result_df$BIC[15]` but given the purpose of this model (Descriptive), I am taking into account that a more modest model with less features to interpret will help with the interpretation of the model and the feature importance. 
+That being said, looking at the above graph I could have chosen Model 15 given that it provides the lowest **BIC**: `r result_df$BIC[15]` but given the purpose of this model (Descriptive), I am taking into account that a more modest model with less features to interpret will help with the interpretation of the model and the feature importance.
 
 Additionally, looking back at the variable importance plot, the predictor variables that are added to the models after Model 7 (Model 8, Model 9..) represent a 37% or lower model importance, so that provides even more reasons to use Model 7 as my predictor model of choice.
 
 ### 8.4.1. Model with lowest BIC
+
 **Model 15 Predictor Variables:** `r result_df$Features[15]`
 
-### 8.4.2. Modest model 
+### 8.4.2. Modest model
+
 **Model 7 Predictor Variables:** `r result_df$Features[7]`
 
 ## 8.5. Fitting chosen model
+
 ```{r}
 FinalModel = glm(BuysProduct ~ TotalCheckInLikesReceived + CompanyFollower + YearlyAvgPageVisits 
                  + IsAdult + TotalCheckInLikesGiven + WeeksSinceLastCheckIn + YearlyAvgCheckIns, 
@@ -916,18 +896,16 @@ FinalModel
 
 ```{r}
 
-# 
 beta <- coef(FinalModel)
 beta
 
-# Exponentiate to get odds ratios
 exp(beta)
 
-#
 confint(FinalModel)
 ```
 
 ## 8.6. Extracting Model Coefficients
+
 ```{r}
 # Extracting coefficient estimates
 betahat <- coef(FinalModel)
@@ -967,21 +945,25 @@ conf_df
 
 ## 8.7. Model Coefficient Interpretation
 
-**TotalCheckInLikesReceived:** For each additional like the customer has given in other check-ins, the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[2]`** by a factor of approximately `r conf_df$Odds_Ratio[2]`. 
+**TotalCheckInLikesReceived:** For each additional like the customer has given in other check-ins, the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[2]`** by a factor of approximately `r conf_df$Odds_Ratio[2]`.
 
-This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[2]` by approximately `r conf_df$Factor_Percentage[2]` for each additional like in other check-ins, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[2]` and `r conf_df$Upper_Bound[2]`.
+-   This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[2]` by approximately `r conf_df$Factor_Percentage[2]` for each additional like in other check-ins, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[2]` and `r conf_df$Upper_Bound[2]`.
 
-**CompanyFollowerYes:** If the individual follows the company account (CompanyFollowerYes),the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[3]`** by a factor of approximately `r conf_df$Odds_Ratio[3]`, times the odds of compared to a customer that does not follow the company account, holding all other vaiables constant. 
+**CompanyFollowerYes:** If the individual follows the company account (CompanyFollowerYes),the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[3]`** by a factor of approximately `r conf_df$Odds_Ratio[3]`, times the odds of compared to a customer that does not follow the company account, holding all other vaiables constant.
 
-This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[3]` by approximately `r conf_df$Factor_Percentage[3]`for each additional like in other check-ins, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[3]` and `r conf_df$Upper_Bound[3]`.
+-   This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[3]` by approximately `r conf_df$Factor_Percentage[3]`for each additional like in other check-ins, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[3]` and `r conf_df$Upper_Bound[3]`.
 
-**YearlyAvgPageVisits:** For each additional customer visit to the website on average, the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[4]`** by a factor of approximately `r conf_df$Odds_Ratio[4]`. 
+**YearlyAvgPageVisits:** For each additional customer visit to the website on average, the odds of a customer buying a ticket next month are estimated to **`r conf_df$OddsResult[4]`** by a factor of approximately `r conf_df$Odds_Ratio[4]`.
 
-This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[4]` by approximately `r conf_df$Factor_Percentage[4]` for each visit to the website on average per year, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[4]` and `r conf_df$Upper_Bound[4]`.
+-   This means that, on average, the odds of the event (customer buying a ticket) occurring `r conf_df$OddsResult[4]` by approximately `r conf_df$Factor_Percentage[4]` for each visit to the website on average per year, holding other variables constant. The associated 95% confidence interval for this odds ratio is between approximately `r conf_df$Lower_Bound[4]` and `r conf_df$Upper_Bound[4]`.
 
 ## 9. Graphing Model Variables
 
 After the model coefficient interpretations, I will include some graphs to better understand the interpretations.
+
+### 9.1. Graphing Total Likes and Product Purchase
+
+Understanding how the customer being an adult or not and the likes they have given to previous destinations where they have Checked-In in the past affects whether they will buy a ticket next month or not.
 
 ```{r}
 ggplot(data = cb_data)+
@@ -991,6 +973,10 @@ ggplot(data = cb_data)+
   facet_wrap(~IsAdult, labeller = labeller(IsAdult = c(No = "Not Adult", Yes = "Adult")))
 ```
 
+### 9.2. Graphing Yearly Average Page Visits and Product Purchase
+
+Understanding how the customer being a follower or not and the yearly average number of visits to a certain page will affect to whether they will buy a ticket next month or not.
+
 ```{r}
 ggplot(data = cb_data)+
   geom_histogram(aes(x = YearlyAvgPageVisits, fill = BuysProduct), position = "fill", binwidth = 30) + 
@@ -998,6 +984,10 @@ ggplot(data = cb_data)+
   labs(x = "Yearly Avg Page Visits", y = "Proportion") +
   facet_wrap(~CompanyFollower, labeller = labeller(CompanyFollower = c(No = "Not Follower", Yes = "Follows")))
 ```
+
+### 9.3. Graphing Yearly Average Check-In's and Product Purchase
+
+Understanding how the customer being an adult or not and the yearly number of check-in's they have completed in the past affects whether they will buy a ticket next month or not.
 
 ```{r}
 ggplot(data = cb_data)+
@@ -1007,15 +997,21 @@ ggplot(data = cb_data)+
   facet_wrap(~IsAdult, labeller = labeller(IsAdult = c(No = "Not Adult", Yes = "Adult")))
 ```
 
-```{r}
+### 9.4. Graphing Yearly Average Check-In's and Product Purchase
 
+Understanding how the customer being an adult or not and the average number of pages they visited might affect whether the customer will buy a ticket next month or not.
+
+```{r}
 ggplot(data = cb_data)+
   geom_histogram(aes(x = YearlyAvgPageVisits, fill = BuysProduct), position = "fill", binwidth = 30) + 
   scale_fill_brewer("Customer\nBuys Product", palette = "Paired")+
-  labs(x = "Yearly Avg Cutomer Check In's", y = "Proportion") +
+  labs(x = "Yearly Avg Cutomer Page Visits", y = "Proportion") +
   facet_wrap(~IsAdult, labeller = labeller(IsAdult = c(No = "Not Adult", Yes = "Adult")))
-
 ```
+
+### 9.5. Graphing Total Check-In's Received and Product Purchase
+
+Understanding how the total check-in likes received and the average number of pages a customer visits might affect whether the customer might buy a ticket next month or not.
 
 ```{r}
 ggplot(data = cb_data) +
@@ -1025,41 +1021,42 @@ ggplot(data = cb_data) +
 ```
 
 ## 10. Recommendations
-### Strategic Social Media Engagement:
+
+### 10.1. Strategic Social Media Engagement:
 
 Let's develop a targeted social media engagement strategy to encourage more customers to follow our company's account. Given the substantial positive impact of being a CompanyFollower, increasing our follower base has the potential to significantly boost ticket sales.
 
-### Enhanced Online Experience:
+### 10.2. Enhanced Online Experience:
 
 Despite the small impact, let's consider optimizing our website to enhance the user experience. This could involve personalized content recommendations, targeted promotions, or other features aimed at increasing the conversion rate for website visits to ticket purchases.
 
-### Continuous Monitoring and Iteration:
+### 10.3. Continuous Monitoring and Iteration:
 
 We'll establish a routine for monitoring the model's performance and iterate as needed. While Model 7 has been chosen for its balance between simplicity and performance, periodic reassessment should be conducted to ensure continued relevance and accuracy.
 
 ## 11. Conclusions
 
-### Model Validation for Confidence:
+### 11.1. Model Validation for Confidence:
 
 Rest assured that the selected Model 7 demonstrates robust predictive performance, with a high AUC of 99.88%. The model's ability to correctly identify both positive and negative cases (sensitivity and specificity exceeding 99%) instills confidence in its reliability.
 
-### Key Drivers of Ticket Purchases:
+### 11.2. Key Drivers of Ticket Purchases:
 
 CompanyFollower emerges as a key driver of ticket purchases, emphasizing the importance of building and maintaining a strong social media presence. While social interactions (TotalCheckInLikesReceived) play a role, their impact is relatively small and may require a more nuanced understanding.
 
-### Balancing Complexity and Efficiency:
+### 11.3. Balancing Complexity and Efficiency:
 
 I've opted for Model 7 over more complex models based on the variable importance plot, with variables beyond Model 7 contributing 37% or less to the model. This choice strikes a balance between model performance and computational efficiency, ensuring we get the most value with the least complexity.
 
-### Decision-Making Threshold:
+### 11.4. Decision-Making Threshold:
 
 The suggested probability threshold of 0.2325 provides a balanced trade-off between sensitivity and specificity. This threshold can be fine-tuned based on our business considerations and the acceptable level of false positives and false negatives.
 
-### Continuous Improvement Journey:
+### 11.5. Continuous Improvement Journey:
 
 Let's emphasize the importance of ongoing monitoring and adaptation. As our customers' behaviors and preferences evolve, the model should be regularly updated to ensure its continued relevance and accuracy in predicting ticket purchases.
 
 # 12. References
 
-1.  [R Markdowon Cheat-Sheet](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+1.  [R Markdowon](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
 2.  [Dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal)
