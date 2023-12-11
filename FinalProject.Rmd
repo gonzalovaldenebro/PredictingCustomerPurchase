@@ -5,10 +5,9 @@ output:
     theme: united
     highlight: tango
     toc: TRUE
-    toc_depth: 3
-    number_sections: TRUE
+    toc_depth: 4
     toc_float:
-      smooth_scroll: FALSE
+      smooth_scroll: TRUE
       collapsed: FALSE
 ---
 
@@ -16,11 +15,11 @@ output:
 
 [LinkedIn](https://www.linkedin.com/in/gonzalo-valdenebro-035392157/) \| [GitHub](https://github.com/gonzalovaldenebro)
 
-## 1. Introduction to data
+# 1. Introduction to data
 
 This [dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal) provides a snapshot of user behavior on a social media platform associated with a tourism company. It includes essential information such as user identification, ticket purchase predictions, and key metrics related to user engagement, preferences, and demographic details. The [dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism-portal) aims to unveil insights that can inform strategic decisions to enhance the customer experience and increase ticket sales for the tourism company.
 
-## 2. Research Questions of the client
+# 2. Research Questions of the client
 
 ### Research Question 1: Impact of Social Engagement
 
@@ -34,7 +33,7 @@ This [dataset](https://www.kaggle.com/datasets/ddosad/customer-behaviour-tourism
 
 **Client's Inquiry:** The client is interested in exploring the relationship between the number of visits to our website and the likelihood of customers purchasing a ticket. How do YearlyAvgPageVisits correlate with the odds of buying a ticket next month?
 
-## 3. Cleaning the environment and loading packages
+# 3. Cleaning the environment and loading packages
 
 ```{r}
 rm(list = ls())
@@ -55,7 +54,7 @@ library(RColorBrewer)
 library(bookdown)
 ```
 
-## 4. Loading the data
+# 4. Loading the data
 
 ```{r}
 cv = read.csv('Data/CustomerBehaviourTourism.csv', stringsAsFactors = TRUE) 
@@ -63,21 +62,21 @@ cv = read.csv('Data/CustomerBehaviourTourism.csv', stringsAsFactors = TRUE)
 
 This is my data. It is cool. There are `r nrow(cv)` rows in my data.
 
-## 5. Exploratory Data Analysis
+# 5. Exploratory Data Analysis
 
-### 5.1. Exploring the data structure
+## 5.1. Exploring the data structure
 
 ```{r}
 #str(cv)
 ```
 
-### 5.2. Exploring the summary statistics
+## 5.2. Exploring the summary statistics
 
 ```{r}
 #summary(cv)
 ```
 
-### 5.3. Missing Values
+## 5.3. Missing Values
 
 -   **Yearly_avg_view_on_travel_page** *[int]*: `r sum(is.na(cv$Yearly_avg_view_on_travel_page))`
 -   **total_likes_on_outstation_checkin_given** *[int]*: `r sum(is.na(cv$total_likes_on_outstation_checkin_given))`
@@ -85,7 +84,7 @@ This is my data. It is cool. There are `r nrow(cv)` rows in my data.
 -   **Adult_flag** *[int]*: `r sum(is.na(cv$Adult_flag))`
 -   **Daily_Avg_mins_spend_on_traveling_page** *[int]*: `r sum(is.na(cv$Daily_Avg_mins_spend_on_traveling_page))`
 
-## 6. Data Cleaning
+# 6. Data Cleaning
 
 ### 6.2.1. Clean the **following_company_page** column
 
@@ -576,13 +575,13 @@ For my predictive modelling, I choose the Random Forest given its simplicity to 
 
 - Random Forest excels at capturing complex relationships and non-linear patterns in data, making it suitable for classification tasks with intricate decision boundaries.
 
-##7.1.Clean the environmnet
+## 7.1.Clean the environmnet
 
 ```{r}
 rm(list = ls())
 ```
 
-##7.2.Load packages required
+## 7.2.Load packages required
 
 ```{r}
 library(rpart)
